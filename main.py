@@ -7,6 +7,7 @@ import argparse
 from utils import *
 from files import *
 
+
 def main():
     parser = argparse.ArgumentParser(description='LSA')
     parser.add_argument('-i', '--input')
