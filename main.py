@@ -12,13 +12,11 @@ def main():
     parser = argparse.ArgumentParser(description='LSA')
     parser.add_argument('-i', '--input')
     parser.add_argument('-o', '--output')
+    parser.add_argument('-t', '--type', default='original')
     args = parser.parse_args()
     if args.input and args.output:
-        features = read_file(args.input)
-        data = {}        
-        one_enabled(data, features)
-        one_disabled(data, features)
-        most_enabled_disabled(data, features)
+        model = read_file(args.input)
+        data = globals()[args.type](model)
         write_file(data, args.output)
     else:
         parser.print_help()

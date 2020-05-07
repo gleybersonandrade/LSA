@@ -1,68 +1,72 @@
 {
-    "model": [
-        { "code": "1", "type": "Feature", "name": "Feature Model" },
-        { "code": "1.1", "type": "Feature", "name": "HW Kiosk" },
-        { "code": "1.1.1", "type": "Group", "name": "Information Request" },
-        { "code": "1.1.1.1", "type": "Feature", "name": "IR Diseases" },
-        { "code": "1.1.1.2", "type": "Feature", "name": "IR Complaint" },
-        { "code": "1.1.1.3", "type": "Feature", "name": "IR Specialities" },
-        { "code": "1.1.2", "type": "Group", "name": "Complaints" },
-        { "code": "1.1.2.1", "type": "Feature", "name": "Animal" },
-        { "code": "1.1.2.1.1", "type": "Feature", "name": "Animal Type" },
-        { "code": "1.1.2.1.2", "type": "Feature", "name": "Animal Amount" },
-        { "code": "1.1.2.1.3", "type": "Feature", "name": "Animal Date" },
-        { "code": "1.1.2.1.4", "type": "Feature", "name": "Animal Address" },
-        { "code": "1.1.2.2", "type": "Feature", "name": "Food" },
-        { "code": "1.1.2.2.1", "type": "Feature", "name": "Food Address" },
-        { "code": "1.1.2.2.2", "type": "Feature", "name": "Food Guest Count" },
-        { "code": "1.1.2.2.3", "type": "Feature", "name": "Food Sick Count" },
-        { "code": "1.1.2.2.4", "type": "Feature", "name": "Food Hospitalized Count" },
-        { "code": "1.1.2.2.5", "type": "Feature", "name": "Food Death Count" },
-        { "code": "1.1.2.2.6", "type": "Feature", "name": "Food Care Place" },
-        { "code": "1.1.2.2.7", "type": "Feature", "name": "Food Suspicious Meal" },
-        { "code": "1.1.2.3", "type": "Feature", "name": "Diverse" },
-        { "code": "1.1.2.3.1", "type": "Feature", "name": "Diverse Age" },
-        { "code": "1.1.2.3.2", "type": "Feature", "name": "Diverse Schooling" },
-        { "code": "1.1.2.3.3", "type": "Feature", "name": "Diverse Occupation" },
-        { "code": "1.1.2.3.4", "type": "Feature", "name": "Diverse Address" },
-        { "code": "1.2", "type": "Group", "name": "Tables" },
-        { "code": "1.2.1", "type": "Feature", "name": "Complaint" },
-        { "code": "1.2.1.1", "type": "Feature", "name": "Create Complaint" },
-        { "code": "1.2.1.2", "type": "Feature", "name": "Read Complaint" },
-        { "code": "1.2.1.3", "type": "Feature", "name": "Update Complaint" },
-        { "code": "1.2.1.4", "type": "Feature", "name": "Delete Complaint" },
-        { "code": "1.2.1.5", "type": "Feature", "name": "View Complaint" },
-        { "code": "1.2.1.6", "type": "Feature", "name": "Search Complaint" },
-        { "code": "1.2.2", "type": "Feature", "name": "Disease" },
-        { "code": "1.2.2.1", "type": "Feature", "name": "Create Disease" },
-        { "code": "1.2.2.2", "type": "Feature", "name": "Read Disease" },
-        { "code": "1.2.2.3", "type": "Feature", "name": "Update Disease" },
-        { "code": "1.2.2.4", "type": "Feature", "name": "Delete Disease" },
-        { "code": "1.2.2.5", "type": "Feature", "name": "Search Disease" },
-        { "code": "1.2.3", "type": "Feature", "name": "Employee" },
-        { "code": "1.2.3.1", "type": "Feature", "name": "Create Employee" },
-        { "code": "1.2.3.2", "type": "Feature", "name": "Read Employee" },
-        { "code": "1.2.3.3", "type": "Feature", "name": "Update Employee" },
-        { "code": "1.2.3.4", "type": "Feature", "name": "Delete Employee" },
-        { "code": "1.2.3.5", "type": "Feature", "name": "Search Employee" },
-        { "code": "1.2.3.6", "type": "Feature", "name": "Login" },
-        { "code": "1.2.4", "type": "Feature", "name": "Health Unit" },
-        { "code": "1.2.4.1", "type": "Feature", "name": "Create Health Unit" },
-        { "code": "1.2.4.2", "type": "Feature", "name": "Read Health Unit" },
-        { "code": "1.2.4.3", "type": "Feature", "name": "Update Health Unit" },
-        { "code": "1.2.4.4", "type": "Feature", "name": "Delete Health Unit" },
-        { "code": "1.2.4.5", "type": "Feature", "name": "Search Health Unit" },
-        { "code": "1.2.5", "type": "Feature", "name": "Speciality" },
-        { "code": "1.2.5.1", "type": "Feature", "name": "Create Speciality" },
-        { "code": "1.2.5.2", "type": "Feature", "name": "Read Speciality" },
-        { "code": "1.2.5.3", "type": "Feature", "name": "Update Speciality" },
-        { "code": "1.2.5.4", "type": "Feature", "name": "Delete Speciality" },
-        { "code": "1.2.5.5", "type": "Feature", "name": "Search Speciality" },
-        { "code": "1.2.6", "type": "Feature", "name": "Symptom" },
-        { "code": "1.2.6.1", "type": "Feature", "name": "Create Symptom" },
-        { "code": "1.2.6.2", "type": "Feature", "name": "Read Symptom" },
-        { "code": "1.2.6.3", "type": "Feature", "name": "Update Symptom" },
-        { "code": "1.2.6.4", "type": "Feature", "name": "Delete Symptom" },
-        { "code": "1.2.6.5", "type": "Feature", "name": "Search Symptom" }
-    ]
+    "1": { "type": "Feature", "attr": "optional", "name": "Feature Model", "children": {
+        "1.1": { "type": "Feature", "attr": "optional", "name": "HW Kiosk", "children": {
+            "1.1.1": { "type": "Group", "attr": "AND", "name": "Information Request", "children": {
+                "1.1.1.1": { "type": "Feature", "attr": "optional", "name": "IR Diseases" },
+                "1.1.1.2": { "type": "Feature", "attr": "optional", "name": "IR Complaint" },
+                "1.1.1.3": { "type": "Feature", "attr": "optional", "name": "IR Specialties" }
+            }},
+            "1.1.2": { "type": "Group", "attr": "OR", "name": "Complaints", "children": {
+                "1.1.2.1": { "type": "Feature", "attr": "optional", "name": "Animal", "children": {
+                    "1.1.2.1.1": { "type": "Feature", "attr": "mandatory", "name": "Animal Type" },
+                    "1.1.2.1.2": { "type": "Feature", "attr": "mandatory", "name": "Animal Amount" },
+                    "1.1.2.1.3": { "type": "Feature", "attr": "mandatory", "name": "Animal Date" },
+                    "1.1.2.1.4": { "type": "Feature", "attr": "optional", "name": "Animal Address" }
+                }}, "1.1.2.2": { "type": "Feature", "attr": "optional", "name": "Food", "children": {
+                    "1.1.2.2.1": { "type": "Feature", "attr": "optional", "name": "Food Address" },
+                    "1.1.2.2.2": { "type": "Feature", "attr": "mandatory", "name": "Food Guest Count" },
+                    "1.1.2.2.3": { "type": "Feature", "attr": "mandatory", "name": "Food Sick Count" },
+                    "1.1.2.2.4": { "type": "Feature", "attr": "mandatory", "name": "Food Hospitalized Count" },
+                    "1.1.2.2.5": { "type": "Feature", "attr": "mandatory", "name": "Food Death Count" },
+                    "1.1.2.2.6": { "type": "Feature", "attr": "optional", "name": "Food Care Place" },
+                    "1.1.2.2.7": { "type": "Feature", "attr": "optional", "name": "Food Suspicious Meal" }
+                }}, "1.1.2.3": { "type": "Feature", "attr": "optional", "name": "Diverse", "children": {
+                    "1.1.2.3.1": { "type": "Feature", "attr": "mandatory", "name": "Diverse Age" },
+                    "1.1.2.3.2": { "type": "Feature", "attr": "optional", "name": "Diverse Schooling" },
+                    "1.1.2.3.3": { "type": "Feature", "attr": "optional", "name": "Diverse Occupation" },
+                    "1.1.2.3.4": { "type": "Feature", "attr": "optional", "name": "Diverse Address" }
+                }}
+            }}
+        }}, "1.2": { "type": "Group", "attr": "OR", "name": "Tables", "children": {
+            "1.2.1": { "type": "Feature", "attr": "optional", "name": "Complaint", "children": {
+                "1.2.1.1": { "type": "Feature", "attr": "optional", "name": "Create Complaint" },
+                "1.2.1.2": { "type": "Feature", "attr": "optional", "name": "Read Complaint" },
+                "1.2.1.3": { "type": "Feature", "attr": "optional", "name": "Update Complaint" },
+                "1.2.1.4": { "type": "Feature", "attr": "optional", "name": "Delete Complaint" },
+                "1.2.1.5": { "type": "Feature", "attr": "optional", "name": "View Complaint" },
+                "1.2.1.6": { "type": "Feature", "attr": "optional", "name": "Search Complaint" }
+            }}, "1.2.2": { "type": "Feature", "attr": "optional", "name": "Disease", "children": {
+                "1.2.2.1": { "type": "Feature", "attr": "optional", "name": "Create Disease" },
+                "1.2.2.2": { "type": "Feature", "attr": "optional", "name": "Read Disease" },
+                "1.2.2.3": { "type": "Feature", "attr": "optional", "name": "Update Disease" },
+                "1.2.2.4": { "type": "Feature", "attr": "optional", "name": "Delete Disease" },
+                "1.2.2.5": { "type": "Feature", "attr": "optional", "name": "Search Disease" }
+            }}, "1.2.3": { "type": "Feature", "attr": "optional", "name": "Employee", "children": {
+                "1.2.3.1": { "type": "Feature", "attr": "optional", "name": "Create Employee" },
+                "1.2.3.2": { "type": "Feature", "attr": "optional", "name": "Read Employee" },
+                "1.2.3.3": { "type": "Feature", "attr": "optional", "name": "Update Employee" },
+                "1.2.3.4": { "type": "Feature", "attr": "optional", "name": "Delete Employee" },
+                "1.2.3.5": { "type": "Feature", "attr": "optional", "name": "Search Employee" },
+                "1.2.3.6": { "type": "Feature", "attr": "optional", "name": "Login" }
+            }}, "1.2.4": { "type": "Feature", "attr": "optional", "name": "Health Unit", "children": {
+                "1.2.4.1": { "type": "Feature", "attr": "optional", "name": "Create Health Unit" },
+                "1.2.4.2": { "type": "Feature", "attr": "optional", "name": "Read Health Unit" },
+                "1.2.4.3": { "type": "Feature", "attr": "optional", "name": "Update Health Unit" },
+                "1.2.4.4": { "type": "Feature", "attr": "optional", "name": "Delete Health Unit" },
+                "1.2.4.5": { "type": "Feature", "attr": "optional", "name": "Search Health Unit" }
+            }}, "1.2.5": { "type": "Feature", "attr": "optional", "name": "Speciality", "children": {
+                "1.2.5.1": { "type": "Feature", "attr": "optional", "name": "Create Speciality" },
+                "1.2.5.2": { "type": "Feature", "attr": "optional", "name": "Read Speciality" },
+                "1.2.5.3": { "type": "Feature", "attr": "optional", "name": "Update Speciality" },
+                "1.2.5.4": { "type": "Feature", "attr": "optional", "name": "Delete Speciality" },
+                "1.2.5.5": { "type": "Feature", "attr": "optional", "name": "Search Speciality" }
+            }}, "1.2.6": { "type": "Feature", "attr": "optional", "name": "Symptom", "children": {
+                "1.2.6.1": { "type": "Feature", "attr": "optional", "name": "Create Symptom" },
+                "1.2.6.2": { "type": "Feature", "attr": "optional", "name": "Read Symptom" },
+                "1.2.6.3": { "type": "Feature", "attr": "optional", "name": "Update Symptom" },
+                "1.2.6.4": { "type": "Feature", "attr": "optional", "name": "Delete Symptom" },
+                "1.2.6.5": { "type": "Feature", "attr": "optional", "name": "Search Symptom" }
+            }}
+        }}
+    }}
 }

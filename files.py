@@ -7,10 +7,7 @@ import json
 def read_file(file):
     """Read JSON file function"""
     with open(file) as json_data:
-        model = json.load(json_data)["model"]
-        features = [feature["code"] for feature in model
-                    if feature["type"] == "Feature"]
-        return features
+        return json.load(json_data)
 
 
 def write_file(data, file):
