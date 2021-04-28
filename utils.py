@@ -1,462 +1,218 @@
-"""Sampling functions"""
+"""Utils functions"""
 
 # System imports
-import random
+import glob
 import re
 import sys
-from random import randrange
 
 
-def check(product, data):
-    """Check if product does not exist in the data"""
-    if type(data) == dict:
-        data = data.values()
-    for d in data:
-        if product == d:
-            return False
-    return True
+def is_function_decl(index, lines):
+    """Check that the line is a function declaration"""
+
+    line = lines[index]
+    previous_line = lines[index - 1]
+    types = ["char", "signed char", "unsigned char", "string", "short", "short int",
+             "signed short", "signed short int", "unsigned short", "unsigned short int",
+             "int", "signed", "signed int", "unsigned", "unsigned int", "long", "long int",
+             "signed long", "signed long int", "unsigned long", "unsigned long int", "long long",
+             "long long int", "signed long long", "signed long long int", "unsigned long long",
+             "unsigned long long int", "float", "double", "long double", "struct", "bool", "void"]
+    return_types = "".join([r"(?<=%s\s)|" % x for x in types])[:-1]
+    previous_types = "".join(["%s|" % t for t in types])[:-1]
+
+    return (re.search(r"\(", line) and
+            re.search(r"^[^<;>]+$", line) and
+            re.search(r"^[^<:>]+$", line) and
+            not re.search(r"^\#", line) and
+            not re.search(r"\(.*?\(", line) and
+            not re.search(r"\=", line) and
+            (re.search(r"(?<=%s).*?(?=\s?\()" % return_types, line) or
+             re.search(r"((%s)\s*)$" % previous_types, previous_line)))
 
 
-def get_all_features(features, data):
-    for fid, feature in features.items():
-        if feature["type"] == "Feature":
-            data.update({fid: {"name": feature["name"],
-                               "attr": feature["attr"]}})
-        children = feature.get("children", {})
-        get_all_features(children, data)
+def collect_features(project_path):
+    """Collect project features."""
+
+    features = {}
+
+    for filename in glob.iglob(project_path + '**/**', recursive=True):
+        for extension in ['.c', '.cpp', '.cs']:
+            if filename.endswith(extension):
+                print("RUNNING", filename)
+
+                function_flag = False
+
+                try:
+                    func_file = open(filename, "r").readlines()
+                except:
+                    continue
+
+                for index, line in enumerate(func_file):
+                    try:
+                        if not function_flag and is_function_decl(index, func_file):
+                            name = get_function_name(line)
+                            if name == '' or re.search(r"^[\[|\]|{|}]", name):
+                                continue
+
+                            braces_stack = []
+                            function_flag = True
+                            parameters = get_parameters(index, func_file)
+
+                        if function_flag:
+                            exp = find_feature_exp(index, func_file)
+                            if exp and exp not in ['0', '1']:
+                                target_file = filename.split('repo/', 1)[1]
+                                save_feature_exp(exp, target_file, name, parameters, features)
+
+                            # Controls function scope
+                            for copen in re.findall(r"{", line):
+                                braces_stack.append(copen)
+                            for cclose in re.findall(r"}", line):
+                                braces_stack.pop()
+                                if len(braces_stack) == 0:
+                                    function_flag = False
+                    except:
+                        continue
+
+    return features
 
 
-def original(model):
-    """Create original data"""
+def generate_model(features):
+    """Generate feature model."""
 
-    features_data = {}
-    get_all_features(model, features_data)
-
-    data = {"features": features_data}
-    features = list(data["features"].keys())
-
-    def one_enabled():
-        """One Enabled sampling algorithm"""
-        data['one_enabled'] = {}
-        for index, feature in enumerate(features):
-            data['one_enabled'].update({index: [feature]})
-
-    def one_disabled():
-        """One Disabled sampling algorithm"""
-        data['one_disabled'] = {}
-        for index, feature in enumerate(features):
-            features_temp = features.copy()
-            features_temp.remove(feature)
-            data['one_disabled'].update({index: features_temp})
-
-    def most_enabled_disabled():
-        """Most Enabled Disabled sampling algorithm"""
-        data['most_enabled_disabled'] = {}
-        data['most_enabled_disabled'].update({"0": features})
-        data['most_enabled_disabled'].update({"1": []})
-
-    one_enabled()
-    one_disabled()
-    most_enabled_disabled()
-    return data
-
-
-def rand_original(model):
-    """Create random original data"""
-
-    features_data = {}
-    get_all_features(model, features_data)
-
-    data = {"features": features_data}    
-    features = list(data["features"].keys())
-    temp_products = []
-
-    def one_enabled():
-        """One Enabled sampling algorithm"""
-        for index, feature in enumerate(features):
-            temp_products.append([feature])
-
-    def one_disabled():
-        """One Disabled sampling algorithm"""
-        for index, feature in enumerate(features):
-            features_temp = features.copy()
-            features_temp.remove(feature)
-            temp_products.append(features_temp)
-
-    def most_enabled_disabled():
-        """Most Enabled Disabled sampling algorithm"""
-        temp_products.append(features)
-        temp_products.append([])
-
-    one_enabled()
-    one_disabled()
-    most_enabled_disabled()
-
-    data['rand'] = {}
-    for index, product in enumerate(random.choices(temp_products, k=3)):
-        data['rand'].update({index: product})
-
-    return data
-
-
-def any(model):
-    """Create any data"""
-
-    data = {"features": {}}
-
-    def get_features(features):
-        for fid, feature in features.items():
-            children = feature.get("children", {})
-            if feature["type"] == "Feature":
-                data["features"].update({fid: {"name": feature["name"],
-                                               "attr": feature["attr"]}})
-            elif feature["type"] == "Group" and feature["attr"] == "AND":
-                target = random.choice(list(children.keys()))
-                children = {target: children[target]}
-            get_features(children)
-
-    get_features(model)
-    features = list(data["features"].keys())
-
-    def one_enabled():
-        """One Enabled sampling algorithm"""
-        def get_mandatory(fid):
-            mandatory = []
+    all_features = set()
+    for filename, functions in features.items():
+        for function, features in functions.items():
             for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if (re.match(feature, fid) or
-                   (attr == "mandatory" and prefix in mandatory)):
-                    mandatory.append(feature)
+                for and_feature in feature.split(' AND'):
+                    for or_feature in and_feature.split(' OR'):
+                        final_feature = re.sub(r'NOT | NOT|\)|\(| ', '', or_feature)
+                        if final_feature:
+                            all_features.add(final_feature)
 
-            return mandatory
+    model = {}
+    for index, feature in enumerate(all_features):
+        model.update({index+1: { "type": "Feature", "attr": "optional", "name": feature}})
 
-        count = len(data['one_enabled'])
-        for feature in features:
-            mandatory = get_mandatory(feature)
-            if check(mandatory, data['one_enabled']):
-                data['one_enabled'].update({count: mandatory})
-                count += 1
-
-    def one_disabled():
-        """One Disabled sampling algorithm"""
-        def get_children(fid):
-            children = []
-            for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if re.match(fid, feature) or (prefix in children and
-                                              attr == "mandatory"):
-                    children.append(feature)
-
-            return children
-
-        count = len(data['one_disabled'])
-        for feature in features:
-            attr = data["features"][feature]["attr"]
-            if attr == "mandatory":
-                continue
-            features_copy = features.copy()
-            children = get_children(feature)
-            features_temp = [f for f in features_copy if f not in children]
-            if check(features_temp, data['one_disabled']):
-                data['one_disabled'].update({count: features_temp})
-                count += 1
-
-    def most_enabled_disabled():
-        """Most Enabled Disabled sampling algorithm"""
-        count = len(data['most_enabled_disabled'])
-        if check([], data['most_enabled_disabled']):
-            data['most_enabled_disabled'].update({count: []})
-        if check(features, data['most_enabled_disabled']):
-            data['most_enabled_disabled'].update({count+1: features})
-
-    for strategy in ['one_enabled', 'one_disabled', 'most_enabled_disabled']:
-        data[strategy] = {}
-    one_enabled()
-    one_disabled()
-    most_enabled_disabled()
-    return data
+    print("DONE")
+    return model
 
 
-def rand_any(model):
-    """Create random any data"""
+def get_function_name(line):
+    """Get name of a function."""
 
-    data = {"features": {}}
-    temp_products = []
+    func_name = re.split(r"\(", line)[0]
+    func_name = re.split(r" ", func_name)[-1]
+    func_name = re.sub(r"(\*|\+|\-)", r"", func_name)
+    return func_name
 
-    def get_features(features):
-        for fid, feature in features.items():
-            children = feature.get("children", {})
-            if feature["type"] == "Feature":
-                data["features"].update({fid: {"name": feature["name"],
-                                               "attr": feature["attr"]}})
-            elif feature["type"] == "Group" and feature["attr"] == "AND":
-                target = random.choice(list(children.keys()))
-                children = {target: children[target]}
-            get_features(children)
 
-    get_features(model)
-    features = list(data["features"].keys())
+def get_parameters(index, lines):
+    """Get parameters of a function."""
+    def transform_parameters(parameters):
+        final_parameters = ""
+        parameters_list = re.split(r", ", parameters)
+        for parameter in parameters_list:
+            var_name = re.split(r" ", parameter)[-1]
+            var_name = re.escape(var_name)
+            if re.search(r"\*", var_name):
+                count_asterisks = len(re.findall(r"\*", var_name))
+                asterisks = "".join([r"\*" for x in range(0, count_asterisks)])
+                var_name = var_name.partition(asterisks)[-1]
+                parameter = re.sub(r"%s$" % var_name, r"", parameter)
+            else:
+                parameter = re.sub(r" %s" % var_name, r"", parameter)
+            final_parameters += "%s," % parameter
+        return re.sub(r",$", r"", final_parameters)
 
-    def one_enabled():
-        """One Enabled sampling algorithm"""
-        def get_mandatory(fid):
-            mandatory = []
-            for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if (re.match(feature, fid) or
-                   (attr == "mandatory" and prefix in mandatory)):
-                    mandatory.append(feature)
+    line = lines[index]
+    parameters = line.partition("(")[-1]
+    while not re.search(r"\)", parameters):
+        index += 1
+        if not lines[index].startswith("#"):
+            parameters += lines[index]
+    parameters = parameters.partition(")")[0]
+    parameters = re.sub(r"\s+", r" ", parameters)
+    parameters = re.sub(r"\+|\-", r"", parameters)
+    return transform_parameters(parameters)
 
-            return mandatory
 
-        for feature in features:
-            mandatory = get_mandatory(feature)
-            if check(mandatory, temp_products):
-                temp_products.append(mandatory)
-
-    def one_disabled():
-        """One Disabled sampling algorithm"""
-        def get_children(fid):
-            children = []
-            for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if re.match(fid, feature) or (prefix in children and
-                                              attr == "mandatory"):
-                    children.append(feature)
-
-            return children
-
-        for feature in features:
-            attr = data["features"][feature]["attr"]
-            if attr == "mandatory":
-                continue
-            features_copy = features.copy()
-            children = get_children(feature)
-            features_temp = [f for f in features_copy if f not in children]
-            if check(features_temp, temp_products):
-                temp_products.append(features_temp)
-
-    def most_enabled_disabled():
-        """Most Enabled Disabled sampling algorithm"""
-        if check([], temp_products):
-            temp_products.append([])
-        if check(features, temp_products):
-            temp_products.append(features)
-
-    one_enabled()
-    one_disabled()
-    most_enabled_disabled()
-
-    data['rand'] = {}
-    for index, product in enumerate(random.choices(temp_products, k=3)):
-        data['rand'].update({index: product})
+def find_feature_exp(index, lines):
+    """Find expressions on the line"""
+    line = lines[index]
     
-    return data
+    while line.rstrip().endswith('\\'):
+        index += 1
+        line += lines[index]
+
+    line = line.split('/*')[0].split('//')[0]
+    feature_exp = ""
+    if re.search(r"^#ifdef", line):
+        feature_exp = ' '.join(re.split('\s+', line)[1:])
+    elif re.search(r"^#ifndef", line):
+        feature_exp = ' '.join(re.split('\s+', line)[1:])
+        feature_exp = f'NOT {feature_exp}'
+    elif re.search(r"^#if", line) or re.search(r"^#elif", line):
+        feature_exp = ' '.join(re.split('\s+', line)[1:])
+        feature_exp = re.sub('defined', '', feature_exp)
+        feature_exp = re.sub('IS_ENABLED', '', feature_exp)
+
+    feature_exp = re.sub(r'\(', ' ( ', feature_exp)
+    feature_exp = re.sub(r'\)', ' ) ', feature_exp)
+    feature_exp = re.sub(r"\!", 'NOT ', feature_exp)
+    feature_exp = re.sub(r"\&\&", 'AND', feature_exp)
+    feature_exp = re.sub(r"\|\|", 'OR', feature_exp)
+    feature_exp = re.sub(r"\\", '', feature_exp)
+    feature_exp = re.sub(r"<|>|=|!|:|\*|\+|\-|\/|,", '', feature_exp)
+
+    temp_feature_exp = ''
+    is_feature = False
+    for split in feature_exp.split():
+        try:
+            temp = re.sub(r"x|L|df|fL|\(|\)", '', split)
+            int(temp)
+            if split.startswith("("):
+                temp_feature_exp = f"({temp_feature_exp}"
+            if split.endswith(")"):
+                temp_feature_exp = f"{temp_feature_exp})"
+            continue
+        except ValueError:
+            pass
+        if split in ['NOT', 'AND', 'OR', '(NOT', '(AND', '(OR', '(', ')']:
+            is_feature = False
+        else:
+            if is_feature:
+                temp_feature_exp += "AND "
+            is_feature = True
+        temp_feature_exp += f"{split} "
+    
+    temp_feature_exp = re.sub(r'\( ', '(', temp_feature_exp)
+    temp_feature_exp = re.sub(r' \)', ')', temp_feature_exp)
+    temp_feature_exp = re.sub(r' NOT\)| AND\)| OR\)', ')', temp_feature_exp)
+    temp_feature_exp = re.sub(r'\(\)', '', temp_feature_exp)
+
+    final_feature_exp = ''
+    for split in temp_feature_exp.split():
+        if split.startswith("(") and split.endswith(")"):
+            split = re.sub('[()]', ' ', split)
+
+        final_feature_exp += f"{split} "
+
+    return ' '.join(final_feature_exp.split())
 
 
-def all(model):
-    """Create all data"""
+def save_feature_exp(feature_exp, target_file, target_function, target_parameters, features):
+    """Save feature expression"""
 
-    blend = []
-    data = {"features": {}}
-    get_all_features(model, data["features"])
+    function = f"{target_function}({target_parameters})"
 
-    def get_features(features, features_data):
-        for fid, feature in features.items():
-            if feature["type"] == "Group" and feature["attr"] == "AND":
-                continue
-            if feature["type"] == "Feature":
-                features_data.update({fid: {"name": feature["name"],
-                                               "attr": feature["attr"]}})
-            children = feature.get("children", {})
-            get_features(children, features_data)
+    features.setdefault(target_file, {})
+    features[target_file].setdefault(function, [])
+    if feature_exp not in features[target_file][function]:
+        features[target_file][function].append(feature_exp)
 
-    def get_blend(features, base, flag=False):
-        child_data = {}
-        for fid, feature in features.items():
-            children = feature.get("children", {})
-            if feature["type"] == "Group" and feature["attr"] == "AND":
-                for cid, child in children.items():
-                    temp = base.copy()
-                    temp.update({cid: {"name": child["name"],
-                                       "attr": child["attr"]}})
-                    temp.update(get_blend({cid: child}, temp, True))
-                    blend.append(temp)
-            elif flag and feature["type"] == "Feature":
-                child_data.update({fid: {"name": feature["name"],
-                                         "attr": feature["attr"]}})
-            child_data.update(get_blend(children, base, flag))
-        return child_data
 
-    features_data = {}
-    get_features(model, features_data)
-    get_blend(model, features_data)
-
-    def one_enabled(features):
-        """One Enabled sampling algorithm"""
-        def get_mandatory(fid):
-            mandatory = []
-            for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if (re.match(feature, fid) or
-                   (attr == "mandatory" and prefix in mandatory)):
-                    mandatory.append(feature)
-
-            return mandatory
-
-        count = len(data['one_enabled'])
-        for feature in features:
-            mandatory = get_mandatory(feature)
-            if check(mandatory, data['one_enabled']):
-                data['one_enabled'].update({count: mandatory})
-                count += 1
-
-    def one_disabled(features):
-        """One Disabled sampling algorithm"""
-        def get_children(fid):
-            children = []
-            for feature in features:                
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if re.match(fid, feature) or (prefix in children and
-                                              attr == "mandatory"):
-                    children.append(feature)
-
-            return children
-
-        count = len(data['one_disabled'])
-        for feature in features:
-            attr = data["features"][feature]["attr"]
-            if attr == "mandatory":
-                continue
-
-            features_copy = features.copy()
-            children = get_children(feature)
-            features_temp = [f for f in features_copy if f not in children]
-            if check(features_temp, data['one_disabled']):
-                data['one_disabled'].update({count: features_temp})
-                count += 1
-
-    def most_enabled_disabled(features):
-        """Most Enabled Disabled sampling algorithm"""
-        count = len(data['most_enabled_disabled'])
-        if check([], data['most_enabled_disabled']):
-            data['most_enabled_disabled'].update({count: []})
-        if check(features, data['most_enabled_disabled']):
-            data['most_enabled_disabled'].update({count+1: features})
-
+def show_results(data):
     for strategy in ['one_enabled', 'one_disabled', 'most_enabled_disabled']:
-        data[strategy] = {}
-    for b in blend:
-        features = list(b.keys())
-        one_enabled(features)
-        one_disabled(features)
-        most_enabled_disabled(features)
-
-    return data
-
-
-def rand_all(model):
-    """Create random all data"""
-
-    blend = []
-    data = {"features": {}}
-    get_all_features(model, data["features"])
-    temp_products = []
-
-    def get_features(features, features_data):
-        for fid, feature in features.items():
-            if feature["type"] == "Group" and feature["attr"] == "AND":
-                continue
-            if feature["type"] == "Feature":
-                features_data.update({fid: {"name": feature["name"],
-                                               "attr": feature["attr"]}})
-            children = feature.get("children", {})
-            get_features(children, features_data)
-
-    def get_blend(features, base, flag=False):
-        child_data = {}
-        for fid, feature in features.items():
-            children = feature.get("children", {})
-            if feature["type"] == "Group" and feature["attr"] == "AND":
-                for cid, child in children.items():
-                    temp = base.copy()
-                    temp.update({cid: {"name": child["name"],
-                                       "attr": child["attr"]}})
-                    temp.update(get_blend({cid: child}, temp, True))
-                    blend.append(temp)
-            elif flag and feature["type"] == "Feature":
-                child_data.update({fid: {"name": feature["name"],
-                                         "attr": feature["attr"]}})
-            child_data.update(get_blend(children, base, flag))
-        return child_data
-
-    features_data = {}
-    get_features(model, features_data)
-    get_blend(model, features_data)
-
-    def one_enabled(features):
-        """One Enabled sampling algorithm"""
-        def get_mandatory(fid):
-            mandatory = []
-            for feature in features:
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if (re.match(feature, fid) or
-                   (attr == "mandatory" and prefix in mandatory)):
-                    mandatory.append(feature)
-
-            return mandatory
-
-        for feature in features:
-            mandatory = get_mandatory(feature)
-            if check(mandatory, temp_products):
-                temp_products.append(mandatory)
-
-    def one_disabled(features):
-        """One Disabled sampling algorithm"""
-        def get_children(fid):
-            children = []
-            for feature in features:                
-                attr = data["features"][feature]["attr"]
-                prefix = feature[:-2]
-                if re.match(fid, feature) or (prefix in children and
-                                              attr == "mandatory"):
-                    children.append(feature)
-
-            return children
-
-        for feature in features:
-            attr = data["features"][feature]["attr"]
-            if attr == "mandatory":
-                continue
-
-            features_copy = features.copy()
-            children = get_children(feature)
-            features_temp = [f for f in features_copy if f not in children]
-            if check(features_temp, temp_products):
-                temp_products.append(features_temp)
-
-    def most_enabled_disabled(features):
-        """Most Enabled Disabled sampling algorithm"""
-        if check([], temp_products):
-            temp_products.append([])
-        if check(features, temp_products):
-            temp_products.append(features)
-
-    for b in blend:
-        features = list(b.keys())
-        one_enabled(features)
-        one_disabled(features)
-        most_enabled_disabled(features)
-
-    data['rand'] = {}
-    for index, product in enumerate(random.choices(temp_products, k=3)):
-        data['rand'].update({index: product})
-
-    return data
+        if strategy in data:
+            print(f"{strategy}: {len(data[strategy])}")

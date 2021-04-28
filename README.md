@@ -5,20 +5,53 @@ The strategy groups three sampling methods (one enabled, one disabled, most enab
 
 ## Running
 
+The algorithm can be executed using one of the following instructions:
+
+### Generate model
+
 ```
-python main.py -i input.json -o output.json
+python main.py -p project_name -g project_path
 ```
 
-## Input Example
+*Parameters:*
+
+ - **-p**: name of the project, used to name the model and features files;
+ - **-g**: path of the project.
+
+*Model Example:*
 
 ```
 {
-    "features": [
-        { "code": "1", "name": "Feature 1" },
-        { "code": "2", "name": "Feature 2" }
-    ]
+    "1": {
+        "type": "Feature",
+        "attr": "optional",
+        "name": "A"
+    },
+    "2": {
+        "type": "Feature",
+        "attr": "optional",
+        "name": "B"
+    }
 }
 ```
+
+### Run LSA
+
+```
+python main.py -p project_name -i model.json -t type
+```
+
+*Parameters:*
+
+ - **-p**: name of the project, used to name the result file;
+ - **-i**: path of the model.
+ - **-t**: type of strategy, can be:
+   - **original**: Generate results basying only on features;
+   - **any**: Generate results respecting the limitations of the model (only one product is created in decision making);
+   - **all**: Generate results respecting the limitations of the model (all products are created in decision making);
+   - **rand_original**: Same as the *original* type, but only 3 products are created;
+   - **rand_any**: Same as the *any* type, but only 3 products are created;
+   - **rand_all**: Same as the *all* type, but only 3 products are created.
 
 ## Authors
 
@@ -31,4 +64,3 @@ python main.py -i input.json -o output.json
 ## License
 
 This project is licensed under the MIT License.
-

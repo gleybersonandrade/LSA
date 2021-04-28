@@ -1,4 +1,4 @@
-"""LSA IO functions"""
+"""IO functions"""
 
 # System imports
 import json
