@@ -146,6 +146,9 @@ def find_feature_exp(index, lines):
         line += lines[index]
 
     line = line.split('/*')[0].split('//')[0]
+    line = re.sub(r'\(', ' ( ', line)
+    line = re.sub(r'\)', ' ) ', line)
+
     feature_exp = ""
     if re.search(r"^#ifdef", line):
         feature_exp = ' '.join(re.split('\s+', line)[1:])
@@ -157,13 +160,13 @@ def find_feature_exp(index, lines):
         feature_exp = re.sub('defined', '', feature_exp)
         feature_exp = re.sub('IS_ENABLED', '', feature_exp)
 
-    feature_exp = re.sub(r'\(', ' ( ', feature_exp)
-    feature_exp = re.sub(r'\)', ' ) ', feature_exp)
+    feature_exp = re.sub(r"<|>|=|!=|:|\*|\+|\-|\/|,", '', feature_exp)
     feature_exp = re.sub(r"\!", 'NOT ', feature_exp)
     feature_exp = re.sub(r"\&\&", 'AND', feature_exp)
+    feature_exp = re.sub(r"\&", 'AND', feature_exp)
     feature_exp = re.sub(r"\|\|", 'OR', feature_exp)
+    feature_exp = re.sub(r"\|", 'OR', feature_exp)
     feature_exp = re.sub(r"\\", '', feature_exp)
-    feature_exp = re.sub(r"<|>|=|!|:|\*|\+|\-|\/|,", '', feature_exp)
 
     temp_feature_exp = ''
     is_feature = False
@@ -194,9 +197,14 @@ def find_feature_exp(index, lines):
     final_feature_exp = ''
     for split in temp_feature_exp.split():
         if split.startswith("(") and split.endswith(")"):
-            split = re.sub('[()]', ' ', split)
-
+            split = split[1:-1]
         final_feature_exp += f"{split} "
+
+    final_feature_exp = ' '.join(final_feature_exp.split())
+    if final_feature_exp.startswith("(") and final_feature_exp.endswith(")"):
+        final_feature_exp = final_feature_exp[1:-1]
+
+    final_feature_exp = re.sub(r' AND$| OR$', '', final_feature_exp)
 
     return ' '.join(final_feature_exp.split())
 
